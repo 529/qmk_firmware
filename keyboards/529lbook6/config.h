@@ -18,3 +18,6 @@
 //#define NO_ACTION_LAYER
 //#define NO_ACTION_TAPPING
 //#define NO_ACTION_ONESHOT
+
+#define MATRIX_COLS 1
+#define MATRIX_ROWS 1
