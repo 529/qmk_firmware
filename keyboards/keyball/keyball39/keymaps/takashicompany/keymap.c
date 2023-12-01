@@ -45,7 +45,7 @@ enum click_state {
 typedef union {
   uint32_t raw;
   struct {
-    // int16_t to_clickable_time; // // この秒数(千分の一秒)、WAITING状態ならクリックレイヤーが有効になる。  For this number of seconds (milliseconds), if in WAITING state, the click layer is activated.
+    //int16_t to_clickable_time; // // この秒数(千分の一秒)、WAITING状態ならクリックレイヤーが有効になる。  For this number of seconds (milliseconds), if in WAITING state, the click layer is activated.
     int16_t to_clickable_movement;
     bool mouse_scroll_v_reverse;
     bool mouse_scroll_h_reverse;
@@ -57,8 +57,10 @@ user_config_t user_config;
 enum click_state state;     // 現在のクリック入力受付の状態 Current click input reception status
 uint16_t click_timer;       // タイマー。状態に応じて時間で判定する。 Timer. Time to determine the state of the system.
 
-// uint16_t to_clickable_time = 50;   // この秒数(千分の一秒)、WAITING状態ならクリックレイヤーが有効になる。  For this number of seconds (milliseconds), if in WAITING state, the click layer is activated.
-uint16_t to_reset_time = 1000; // この秒数(千分の一秒)、CLICKABLE状態ならクリックレイヤーが無効になる。 For this number of seconds (milliseconds), the click layer is disabled if in CLICKABLE state.
+
+int16_t to_clickable_movement = 300;
+//int16_t to_clickable_time = 1000;   // この秒数(千分の一秒)、WAITING状態ならクリックレイヤーが有効になる。  For this number of seconds (milliseconds), if in WAITING state, the click layer is activated.
+uint16_t to_reset_time = 800; // この秒数(千分の一秒)、CLICKABLE状態ならクリックレイヤーが無効になる。 For this number of seconds (milliseconds), the click layer is disabled if in CLICKABLE state.
 
 const uint16_t click_layer = 6;   // マウス入力が可能になった際に有効になるレイヤー。Layers enabled when mouse input is enabled
 
@@ -79,7 +81,7 @@ int16_t mouse_movement;
 
 void eeconfig_init_user(void) {
     user_config.raw = 0;
-    user_config.to_clickable_movement = 50;
+    user_config.to_clickable_movement = 300;
     user_config.mouse_scroll_v_reverse = false;
     user_config.mouse_scroll_h_reverse = false;
     eeconfig_update_user(user_config.raw);
@@ -128,7 +130,7 @@ bool is_clickable_mode(void) {
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    
+
     switch (keycode) {
         case KC_MY_BTN1:
         case KC_MY_BTN2:
@@ -138,7 +140,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
             // どこのビットを対象にするか。 Which bits are to be targeted?
             uint8_t btn = 1 << (keycode - KC_MY_BTN1);
-            
+
             if (record->event.pressed) {
                 // ビットORは演算子の左辺と右辺の同じ位置にあるビットを比較して、両方のビットのどちらかが「1」の場合に「1」にします。
                 // Bit OR compares bits in the same position on the left and right sides of the operator and sets them to "1" if either of both bits is "1".
@@ -165,7 +167,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 enable_click_layer();   // スクロールキーを離した時に再度クリックレイヤーを有効にする。 Enable click layer again when the scroll key is released.
             }
          return false;
-        
+
         case KC_TO_CLICKABLE_INC:
             if (record->event.pressed) {
                 user_config.to_clickable_movement += 5; // user_config.to_clickable_time += 10;
@@ -190,14 +192,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 eeconfig_update_user(user_config.raw);
             }
             return false;
-        
+
         case KC_SCROLL_DIR_V:
             if (record->event.pressed) {
                 user_config.mouse_scroll_v_reverse = !user_config.mouse_scroll_v_reverse;
                 eeconfig_update_user(user_config.raw);
             }
             return false;
-        
+
         case KC_SCROLL_DIR_H:
             if (record->event.pressed) {
                 user_config.mouse_scroll_h_reverse = !user_config.mouse_scroll_h_reverse;
@@ -207,13 +209,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
          default:
             if  (record->event.pressed) {
-                
+
                 if (state == CLICKING || state == SCROLLING)
                 {
                     enable_click_layer();
                     return false;
                 }
-                
+
                 for (int i = 0; i < sizeof(ignore_disable_mouse_layer_keys) / sizeof(ignore_disable_mouse_layer_keys[0]); i++)
                 {
                     if (keycode == ignore_disable_mouse_layer_keys[i])
@@ -224,9 +226,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
                 disable_click_layer();
             }
-        
+
     }
-   
+
     return true;
 }
 
@@ -238,7 +240,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
     int16_t current_v = 0;
 
     if (current_x != 0 || current_y != 0) {
-        
+
         switch (state) {
             case CLICKABLE:
                 click_timer = timer_read();
@@ -271,7 +273,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
                             scroll_v_mouse_interval_counter -= scroll_v_threshold;
                             rep_v -= scroll_v_threshold;
                         }
-                        
+
                     }
                 } else {
 
@@ -304,11 +306,13 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
 
                 mouse_movement += my_abs(current_x) + my_abs(current_y);
 
-                if (mouse_movement >= user_config.to_clickable_movement)
+                //if (mouse_movement >= user_config.to_clickable_movement)
+                if (mouse_movement >= to_clickable_movement)
                 {
                     mouse_movement = 0;
                     enable_click_layer();
                 }
+
                 break;
 
             default:
@@ -363,7 +367,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
 void oledkit_render_info_user(void) {
     keyball_oled_render_keyinfo();
     keyball_oled_render_ballinfo();
-    
+
     oled_write_P(PSTR("Layer:"), false);
     oled_write(get_u8_str(get_highest_layer(layer_state), ' '), false);
     oled_write_P(PSTR(" MV:"), false);
@@ -408,20 +412,20 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
     _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
     _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
-    _______  , _______  , _______  , _______  , _______  , _______  ,      _______ ,  _______  , _______  , _______  , _______  , _______  
+    _______  , _______  , _______  , _______  , _______  , _______  ,      _______ ,  _______  , _______  , _______  , _______  , _______
   ),
 
   LAYOUT_universal(
     _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
     _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
     _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
-    _______  , _______  , _______  , _______  , _______  , _______  ,      _______ ,  _______  , _______  , _______  , _______  , _______  
+    _______  , _______  , _______  , _______  , _______  , _______  ,      _______ ,  _______  , _______  , _______  , _______  , _______
   ),
 
   LAYOUT_universal(
     _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
     _______  , KC_MY_BTN2, KC_MY_SCR, KC_MY_BTN1, KC_TRNS,                            KC_TRNS, KC_MY_BTN1, KC_MY_SCR, KC_MY_BTN3, _______  ,
     _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
-    _______  , _______  , _______  , _______  , _______  , _______  ,      _______ ,  _______  , _______  , _______  , _______  , _______  
+    _______  , _______  , _______  , _______  , _______  , _______  ,      _______ ,  _______  , _______  , _______  , _______  , _______
   )
 };
