@@ -58,7 +58,7 @@ enum click_state state;     // 現在のクリック入力受付の状態 Curren
 uint16_t click_timer;       // タイマー。状態に応じて時間で判定する。 Timer. Time to determine the state of the system.
 
 
-int16_t to_clickable_movement = 300;
+int16_t to_clickable_movement = 150;
 //int16_t to_clickable_time = 1000;   // この秒数(千分の一秒)、WAITING状態ならクリックレイヤーが有効になる。  For this number of seconds (milliseconds), if in WAITING state, the click layer is activated.
 uint16_t to_reset_time = 800; // この秒数(千分の一秒)、CLICKABLE状態ならクリックレイヤーが無効になる。 For this number of seconds (milliseconds), the click layer is disabled if in CLICKABLE state.
 
