@@ -102,7 +102,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 }
 
 
-#ifdef OLED_ENABLEm
+#ifdef OLED_ENABLE
 
 #    include "lib/oledkit/oledkit.h"
 
